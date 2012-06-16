@@ -5,7 +5,7 @@
   "main": "index",
   "repository": {
     "type" : "git",
-    "url" : "http://github.com/JustinTulloss/zeromq.node.git"
+    "url" : "http://github.com/snrmwg/zeromq.node.git"
   },
   "devDependencies": {
     "should": "*",
@@ -14,9 +14,10 @@
     "dox": "*"
   },
   "engines": {
-    "node": ">=0.3.0 < 0.7.0"
+    "node": ">=0.6.0 < 0.8.0"
   },
   "contributors": [
+    "Marc Schneider <snr.mwg@googlemail.com> (http://www.schneider-marc.biz)",
     "Justin Tulloss <justin.tulloss@gmail.com> (http://justin.harmonize.fm)",
     "Stéphan Kochen <stephan@kochen.nl> (http://stephan.kochen.nl/)",
     "Mike Castleman <m@mlcastle.net> (http://mlcastle.net/)",

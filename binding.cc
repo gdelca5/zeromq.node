@@ -26,9 +26,6 @@
 #include <node.h>
 #include <node_version.h>
 #include <node_buffer.h>
-#if !NODE_VERSION_AT_LEAST(0, 5, 5)
-#include <ev.h>
-#endif
 #include <zmq.h>
 #include <assert.h>
 #include <stdio.h>
@@ -88,13 +85,9 @@ namespace zmq {
       struct BindState;
       static Handle<Value> Bind(const Arguments &args);
 
-#if NODE_VERSION_AT_LEAST(0, 5, 4)
-      static void EIO_DoBind(eio_req *req);
-#else
-      static int EIO_DoBind(eio_req *req);
-#endif
+      static void UV_DoBind(uv_work_t *req);
+      static void UV_BindDone(uv_work_t *req);
 
-      static int EIO_BindDone(eio_req *req);
       static Handle<Value> BindSync(const Arguments &args);
 
       static Handle<Value> Connect(const Arguments &args);
@@ -443,30 +436,22 @@ namespace zmq {
 
     GET_SOCKET(args);
 
+    uv_work_t *req = new uv_work_t;
     BindState* state = new BindState(socket, cb, addr);
-    eio_custom(EIO_DoBind, EIO_PRI_DEFAULT, EIO_BindDone, state);
-    ev_ref(EV_DEFAULT_UC);
+    req->data = state;
+    uv_queue_work(uv_default_loop(), req, UV_DoBind, UV_BindDone);
     socket->state_ = STATE_BUSY;
 
     return Undefined();
   }
 
-#if NODE_VERSION_AT_LEAST(0, 5, 4)
-  void
-#else
-  int
-#endif
-  Socket::EIO_DoBind(eio_req *req) {
+  void Socket::UV_DoBind(uv_work_t *req) {
     BindState* state = (BindState*) req->data;
     if (zmq_bind(state->sock, *state->addr) < 0)
         state->error = zmq_errno();
-#if !NODE_VERSION_AT_LEAST(0, 5, 4)
-    return 0;
-#endif
   }
 
-  int
-  Socket::EIO_BindDone(eio_req *req) {
+  void Socket::UV_BindDone(uv_work_t *req) {
     BindState* state = (BindState*) req->data;
     HandleScope scope;
 
@@ -477,13 +462,13 @@ namespace zmq {
 
     ObjectWrap::Unwrap<Socket>(state->sock_obj)->state_ = STATE_READY;
     delete state;
+    delete req;
 
     TryCatch try_catch;
     cb->Call(v8::Context::GetCurrent()->Global(), 1, argv);
     if (try_catch.HasCaught()) FatalException(try_catch);
 
     ev_unref(EV_DEFAULT_UC);
-    return 0;
   }
 
   Handle<Value>
@@ -723,6 +708,7 @@ namespace zmq {
 
     if (zmq_send(socket->socket_, &msg, flags) < 0)
       return ThrowException(ExceptionFromError());
+    zmq_msg_close(&msg);
 #endif // zero copy / copying version
 
     return Undefined();
