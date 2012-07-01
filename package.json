@@ -13,9 +13,6 @@
     "jade": "*",
     "dox": "*"
   },
-  "engines": {
-    "node": ">=0.6.0 < 0.8.0"
-  },
   "contributors": [
     "Marc Schneider <snr.mwg@googlemail.com> (http://www.schneider-marc.biz)",
     "Justin Tulloss <justin.tulloss@gmail.com> (http://justin.harmonize.fm)",
